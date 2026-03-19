@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Prompt Library</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F5F0;
+    --surface: #FFFFFF;
+    --surface2: #F0EDE6;
+    --border: #E2DDD4;
+    --text: #1A1714;
+    --text2: #6B6560;
+    --text3: #A09A93;
+    --accent: #2D5A3D;
+    --accent-light: #EBF2ED;
+    --accent-text: #1A3D27;
+    --cat-research-bg: #EAF1FB;
+    --cat-research-text: #1A3A6B;
+    --cat-coding-bg: #EAF3E6;
+    --cat-coding-text: #1A4020;
+    --cat-writing-bg: #F5EBF8;
+    --cat-writing-text: #4A1A6B;
+    --cat-design-bg: #FBF0E6;
+    --cat-design-text: #6B3010;
+    --shadow: 0 2px 12px rgba(0,0,0,0.06);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+  }
+
+  /* ── PIN LOCK ── */
+  #lock-screen {
+    position: fixed; inset: 0; z-index: 999;
+    background: var(--bg);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 2rem; padding: 2rem;
+  }
+  .lock-logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem; color: var(--accent);
+    letter-spacing: -0.02em;
+  }
+  .lock-sub { font-size: 13px; color: var(--text3); text-align: center; }
+  .pin-dots { display: flex; gap: 12px; margin: 0.5rem 0; }
+  .pin-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 2px solid var(--border); background: transparent;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .pin-dot.filled { background: var(--accent); border-color: var(--accent); }
+  .pin-pad {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 10px; width: 220px;
+  }
+  .pin-key {
+    height: 56px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    background: var(--surface); color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 18px; font-weight: 500;
+    cursor: pointer; transition: all 0.1s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .pin-key:hover { background: var(--surface2); border-color: var(--accent); }
+  .pin-key:active { transform: scale(0.95); }
+  .pin-key.del { font-size: 14px; color: var(--text2); }
+  .pin-key.empty { visibility: hidden; }
+  .pin-error { font-size: 12px; color: #C0392B; min-height: 16px; }
+  .pin-hint { font-size: 11px; color: var(--text3); }
+
+  /* ── APP ── */
+  #app { display: none; min-height: 100vh; }
+
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 1rem 1.5rem;
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.4rem; color: var(--accent);
+    letter-spacing: -0.02em; white-space: nowrap;
+  }
+  .logo span { font-style: italic; }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+  .icon-btn {
+    width: 36px; height: 36px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border); background: var(--surface);
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    color: var(--text2); transition: all 0.15s; font-size: 14px;
+  }
+  .icon-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .add-btn {
+    padding: 8px 16px; border-radius: var(--radius-sm);
+    background: var(--accent); color: #fff;
+    border: none; font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: opacity 0.15s; white-space: nowrap;
+  }
+  .add-btn:hover { opacity: 0.85; }
+
+  .main { max-width: 1100px; margin: 0 auto; padding: 2rem 1.25rem; }
+
+  .hero { margin-bottom: 2rem; }
+  .hero h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.75rem; font-weight: 400;
+    color: var(--text); letter-spacing: -0.02em;
+    margin-bottom: 0.25rem;
+  }
+  .hero p { font-size: 14px; color: var(--text2); }
+
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 10px; margin-bottom: 1.75rem;
+  }
+  .stat {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 14px 16px;
+  }
+  .stat-n { font-size: 1.5rem; font-weight: 600; color: var(--text); line-height: 1; }
+  .stat-l { font-size: 11px; color: var(--text3); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+  .toolbar {
+    display: flex; gap: 10px; margin-bottom: 1.25rem;
+    flex-wrap: wrap; align-items: center;
+  }
+  .search-wrap { flex: 1; min-width: 180px; position: relative; }
+  .search-icon {
+    position: absolute; left: 11px; top: 50%; transform: translateY(-50%);
+    width: 15px; height: 15px; color: var(--text3); pointer-events: none;
+  }
+  .search-wrap input {
+    width: 100%; padding: 9px 12px 9px 34px;
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--surface); color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    outline: none; transition: border-color 0.15s;
+  }
+  .search-wrap input:focus { border-color: var(--accent); }
+  .search-wrap input::placeholder { color: var(--text3); }
+
+  .pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .pill {
+    padding: 6px 14px; border-radius: 20px;
+    border: 1.5px solid var(--border); background: transparent;
+    color: var(--text2); font-family: 'DM Sans', sans-serif;
+    font-size: 12px; font-weight: 500; cursor: pointer;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .pill:hover { border-color: var(--accent); color: var(--accent); }
+  .pill.active {
+    background: var(--accent); color: #fff;
+    border-color: var(--accent);
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 14px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.1rem 1.25rem;
+    display: flex; flex-direction: column; gap: 10px;
+    transition: box-shadow 0.2s, transform 0.2s;
+    cursor: default;
+  }
+  .card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .card-title { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.4; }
+  .cat-badge {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+    text-transform: uppercase; padding: 3px 9px; border-radius: 20px;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .cat-research { background: var(--cat-research-bg); color: var(--cat-research-text); }
+  .cat-coding   { background: var(--cat-coding-bg);   color: var(--cat-coding-text); }
+  .cat-writing  { background: var(--cat-writing-bg);  color: var(--cat-writing-text); }
+  .cat-design   { background: var(--cat-design-bg);   color: var(--cat-design-text); }
+
+  .card-body {
+    font-size: 13px; color: var(--text2); line-height: 1.65;
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+
+  .card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: auto; gap: 8px; }
+  .tags { display: flex; gap: 5px; flex-wrap: wrap; }
+  .tag {
+    font-size: 11px; padding: 2px 8px;
+    border-radius: 4px; border: 1px solid var(--border);
+    color: var(--text3);
+  }
+  .card-btns { display: flex; gap: 6px; flex-shrink: 0; }
+  .copy-btn, .del-btn {
+    font-size: 12px; padding: 5px 11px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    background: transparent; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all 0.15s;
+  }
+  .copy-btn { color: var(--text2); }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-light); }
+  .copy-btn.ok { color: var(--accent); border-color: var(--accent); background: var(--accent-light); }
+  .del-btn { color: var(--text3); font-size: 13px; padding: 5px 9px; }
+  .del-btn:hover { border-color: #C0392B; color: #C0392B; background: #FDF0EE; }
+
+  .empty { grid-column: 1/-1; text-align: center; padding: 4rem 1rem; color: var(--text3); font-size: 14px; }
+
+  /* ── MODAL ── */
+  .modal-bg {
+    display: none; position: fixed; inset: 0; z-index: 200;
+    background: rgba(20,16,10,0.4);
+    align-items: center; justify-content: center; padding: 1rem;
+  }
+  .modal-bg.open { display: flex; }
+  .modal {
+    background: var(--surface); border-radius: var(--radius);
+    border: 1px solid var(--border);
+    padding: 1.75rem; width: 100%; max-width: 500px;
+    display: flex; flex-direction: column; gap: 1rem;
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.2rem; font-weight: 400; color: var(--text);
+  }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 12px; font-weight: 500; color: var(--text2); text-transform: uppercase; letter-spacing: 0.05em; }
+  .field input, .field select, .field textarea {
+    padding: 9px 12px;
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--bg); color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: 14px;
+    outline: none; transition: border-color 0.15s;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--accent); }
+  .field textarea { min-height: 110px; resize: vertical; line-height: 1.6; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 8px; }
+  .cancel-btn {
+    padding: 9px 18px; border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border); background: transparent;
+    color: var(--text2); font-family: 'DM Sans', sans-serif;
+    font-size: 13px; cursor: pointer; transition: all 0.15s;
+  }
+  .cancel-btn:hover { border-color: var(--text2); }
+  .save-btn {
+    padding: 9px 18px; border-radius: var(--radius-sm);
+    background: var(--accent); color: #fff; border: none;
+    font-family: 'DM Sans', sans-serif; font-size: 13px;
+    font-weight: 500; cursor: pointer; transition: opacity 0.15s;
+  }
+  .save-btn:hover { opacity: 0.85; }
+
+  footer {
+    text-align: center; padding: 2rem 1rem;
+    font-size: 12px; color: var(--text3);
+    border-top: 1px solid var(--border); margin-top: 3rem;
+  }
+
+  @media (max-width: 600px) {
+    .main { padding: 1.25rem 1rem; }
+    .hero h2 { font-size: 1.4rem; }
+    .grid { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- PIN LOCK -->
+<div id="lock-screen">
+  <div class="lock-logo">Prompt <span>Library</span></div>
+  <p class="lock-sub">Enter your PIN to continue</p>
+  <div class="pin-dots" id="pin-dots">
+    <div class="pin-dot" id="d0"></div>
+    <div class="pin-dot" id="d1"></div>
+    <div class="pin-dot" id="d2"></div>
+    <div class="pin-dot" id="d3"></div>
+  </div>
+  <div class="pin-pad">
+    <button class="pin-key" onclick="pinKey('1')">1</button>
+    <button class="pin-key" onclick="pinKey('2')">2</button>
+    <button class="pin-key" onclick="pinKey('3')">3</button>
+    <button class="pin-key" onclick="pinKey('4')">4</button>
+    <button class="pin-key" onclick="pinKey('5')">5</button>
+    <button class="pin-key" onclick="pinKey('6')">6</button>
+    <button class="pin-key" onclick="pinKey('7')">7</button>
+    <button class="pin-key" onclick="pinKey('8')">8</button>
+    <button class="pin-key" onclick="pinKey('9')">9</button>
+    <button class="pin-key empty"></button>
+    <button class="pin-key" onclick="pinKey('0')">0</button>
+    <button class="pin-key del" onclick="pinDel()">⌫</button>
+  </div>
+  <div class="pin-error" id="pin-error"></div>
+  <p class="pin-hint">Default PIN: 1234 &nbsp;·&nbsp; Change it in the file</p>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <header>
+    <div class="logo">Prompt <span>Library</span></div>
+    <div class="header-actions">
+      <button class="icon-btn" onclick="exportData()" title="Export as JSON">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 1v9M5 7l3 3 3-3M2 11v2a1 1 0 001 1h10a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <button class="icon-btn" onclick="lockApp()" title="Lock">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="3" y="7" width="10" height="8" rx="1.5" stroke="currentColor" stroke-width="1.5"/><path d="M5 7V5a3 3 0 016 0v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      </button>
+      <button class="add-btn" onclick="openModal()">+ Add Prompt</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="hero">
+      <h2>Your AI Prompt Collection</h2>
+      <p>Search, copy, and manage your best prompts — all in one place.</p>
+    </div>
+
+    <div class="stats-row" id="stats"></div>
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M10.5 10.5L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <input type="text" id="search" placeholder="Search prompts, tags…" oninput="render()">
+      </div>
+      <div class="pills" id="pills"></div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <footer>Your personal prompt library &nbsp;·&nbsp; All data stored in your browser</footer>
+</div>
+
+<!-- ADD MODAL -->
+<div class="modal-bg" id="modal-bg" onclick="bgClick(event)">
+  <div class="modal">
+    <div class="modal-title">Add New Prompt</div>
+    <div class="field">
+      <label>Title</label>
+      <input type="text" id="m-title" placeholder="e.g. Summarize a research paper">
+    </div>
+    <div class="field">
+      <label>Prompt</label>
+      <textarea id="m-prompt" placeholder="Write your prompt here. Use [BRACKETS] for placeholders."></textarea>
+    </div>
+    <div class="field">
+      <label>Category</label>
+      <select id="m-cat">
+        <option value="research">Research & Analysis</option>
+        <option value="coding">Coding & Tech</option>
+        <option value="writing">Writing & Content</option>
+        <option value="design">Design Review</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Tags (comma-separated)</label>
+      <input type="text" id="m-tags" placeholder="e.g. summarize, academic, pdf">
+    </div>
+    <div class="modal-footer">
+      <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+      <button class="save-btn" onclick="savePrompt()">Save Prompt</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ── CONFIG ── */
+const PIN = '1234'; // Change this to your preferred 4-digit PIN
+
+/* ── DATA ── */
+const SEED = [
+  { id:1, title:'Deep research summary', cat:'research', prompt:'You are a research assistant. Summarize the following paper in 3 sections: Key findings, Methodology, and Limitations. Use plain language suitable for a non-expert reader.\n\nPaper:\n[PASTE PAPER HERE]', tags:['summarize','academic','report'] },
+  { id:2, title:'Competitive analysis', cat:'research', prompt:'Conduct a competitive analysis for [PRODUCT/COMPANY]. Compare across: Target audience, Core features, Pricing, Strengths, and Weaknesses. Present in a structured table format.', tags:['market','strategy','comparison'] },
+  { id:3, title:'Data interpretation', cat:'research', prompt:'Here is a dataset:\n[PASTE DATA]\n\nIdentify the top 3 trends, any anomalies, and suggest 2 follow-up questions a data analyst should investigate.', tags:['data','trends','analysis'] },
+  { id:4, title:'Literature review helper', cat:'research', prompt:'Given the following list of paper abstracts, identify: common themes, contradictions between studies, and gaps in current research. Abstracts:\n[PASTE ABSTRACTS]', tags:['literature','review','academic'] },
+  { id:5, title:'Code review & suggestions', cat:'coding', prompt:'Review the following code for: bugs, performance issues, readability, and security concerns. Provide specific suggestions with corrected code snippets.\n\n```\n[PASTE CODE]\n```', tags:['review','debug','refactor'] },
+  { id:6, title:'Explain like I\'m a junior dev', cat:'coding', prompt:'Explain [CONCEPT/CODE] as if I\'m a junior developer with 6 months of experience. Use an analogy, a short explanation, and a simple working code example.', tags:['explain','learning','beginner'] },
+  { id:7, title:'Write unit tests', cat:'coding', prompt:'Write comprehensive unit tests for the following function using [FRAMEWORK e.g. Jest/PyTest]. Cover: happy path, edge cases, and error conditions.\n\n```\n[PASTE FUNCTION]\n```', tags:['testing','quality','TDD'] },
+  { id:8, title:'Debug this error', cat:'coding', prompt:'I am getting this error:\n[PASTE ERROR]\n\nHere is my code:\n[PASTE CODE]\n\nExplain what is causing it and give me a step-by-step fix.', tags:['debug','error','fix'] },
+  { id:9, title:'Blog post outline', cat:'writing', prompt:'Create a detailed blog post outline on "[TOPIC]" for an audience of [TARGET READERS]. Include: a hook introduction, 5 main sections with subpoints, and a CTA conclusion. Tone: [TONE].', tags:['blog','outline','content'] },
+  { id:10, title:'Rewrite for clarity', cat:'writing', prompt:'Rewrite the following text to be clearer, more concise, and easier to read. Preserve the original meaning. Remove jargon. Target reading level: 8th grade.\n\n[PASTE TEXT]', tags:['editing','clarity','simplify'] },
+  { id:11, title:'LinkedIn post from idea', cat:'writing', prompt:'Write a LinkedIn post based on this idea: [YOUR IDEA]. Make it authentic, insightful, and engaging. Use a hook in the first line. Max 200 words. No hashtag spam.', tags:['linkedin','social','personal brand'] },
+  { id:12, title:'UI design critique', cat:'design', prompt:'Review this UI design for: visual hierarchy, accessibility (contrast, touch targets), consistency, and user flow. Provide specific, actionable feedback for each area.\n\n[ATTACH SCREENSHOT OR DESCRIBE UI]', tags:['UI','critique','accessibility'] },
+  { id:13, title:'Design system audit', cat:'design', prompt:'Audit the provided design for consistency with a design system. Flag: inconsistent spacing, font sizes, color usage, and component deviations. Suggest fixes.\n\n[DESCRIBE OR PASTE DESIGN DETAILS]', tags:['design system','audit','consistency'] },
+];
+
+const CATS = { all:'All', research:'Research & Analysis', coding:'Coding & Tech', writing:'Writing & Content', design:'Design Review' };
+const CAT_SHORT = { research:'Research', coding:'Coding', writing:'Writing', design:'Design' };
+
+function load() {
+  const s = localStorage.getItem('pl_prompts');
+  return s ? JSON.parse(s) : JSON.parse(JSON.stringify(SEED));
+}
+function save() { localStorage.setItem('pl_prompts', JSON.stringify(prompts)); }
+
+let prompts = load();
+let filter = 'all';
+let nextId = Math.max(...prompts.map(p=>p.id)) + 1;
+
+/* ── PIN ── */
+let pinInput = '';
+
+function pinKey(k) {
+  if (pinInput.length >= 4) return;
+  pinInput += k;
+  updateDots();
+  if (pinInput.length === 4) {
+    setTimeout(() => {
+      if (pinInput === PIN) {
+        document.getElementById('lock-screen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        render();
+      } else {
+        document.getElementById('pin-error').textContent = 'Incorrect PIN. Try again.';
+        pinInput = '';
+        updateDots();
+      }
+    }, 150);
+  }
+}
+
+function pinDel() {
+  pinInput = pinInput.slice(0,-1);
+  document.getElementById('pin-error').textContent = '';
+  updateDots();
+}
+
+function updateDots() {
+  for (let i=0; i<4; i++) {
+    document.getElementById('d'+i).classList.toggle('filled', i < pinInput.length);
+  }
+}
+
+function lockApp() {
+  pinInput = '';
+  updateDots();
+  document.getElementById('pin-error').textContent = '';
+  document.getElementById('lock-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+}
+
+/* ── RENDER ── */
+function render() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const list = prompts.filter(p => {
+    const matchCat = filter === 'all' || p.cat === filter;
+    const matchQ = !q || p.title.toLowerCase().includes(q) || p.prompt.toLowerCase().includes(q) || p.tags.some(t=>t.toLowerCase().includes(q));
+    return matchCat && matchQ;
+  });
+
+  document.getElementById('grid').innerHTML = list.length === 0
+    ? '<div class="empty">No prompts found. Try a different search or category.</div>'
+    : list.map(p => `
+      <div class="card">
+        <div class="card-top">
+          <div class="card-title">${esc(p.title)}</div>
+          <span class="cat-badge cat-${p.cat}">${CAT_SHORT[p.cat]}</span>
+        </div>
+        <div class="card-body">${esc(p.prompt)}</div>
+        <div class="card-footer">
+          <div class="tags">${p.tags.slice(0,3).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>
+          <div class="card-btns">
+            <button class="del-btn" onclick="deletePrompt(${p.id})" title="Delete">✕</button>
+            <button class="copy-btn" id="cb-${p.id}" onclick="copyPrompt(${p.id},this)">Copy</button>
+          </div>
+        </div>
+      </div>`).join('');
+
+  renderStats();
+  renderPills();
+}
+
+function renderStats() {
+  const cats = ['research','coding','writing','design'];
+  document.getElementById('stats').innerHTML =
+    `<div class="stat"><div class="stat-n">${prompts.length}</div><div class="stat-l">Total</div></div>` +
+    cats.map(c=>`<div class="stat"><div class="stat-n">${prompts.filter(p=>p.cat===c).length}</div><div class="stat-l">${CAT_SHORT[c]}</div></div>`).join('');
+}
+
+function renderPills() {
+  document.getElementById('pills').innerHTML = Object.entries(CATS).map(([k,v])=>
+    `<button class="pill ${filter===k?'active':''}" onclick="setFilter('${k}')">${v}</button>`
+  ).join('');
+}
+
+function setFilter(cat) { filter = cat; render(); }
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+/* ── ACTIONS ── */
+function copyPrompt(id, btn) {
+  const p = prompts.find(x=>x.id===id);
+  if (!p) return;
+  navigator.clipboard.writeText(p.prompt).then(()=>{
+    btn.textContent = 'Copied!';
+    btn.classList.add('ok');
+    setTimeout(()=>{ btn.textContent = 'Copy'; btn.classList.remove('ok'); }, 1600);
+  });
+}
+
+function deletePrompt(id) {
+  if (!confirm('Delete this prompt?')) return;
+  prompts = prompts.filter(p=>p.id!==id);
+  save(); render();
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(prompts, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'prompt-library-backup.json';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+/* ── MODAL ── */
+function openModal() { document.getElementById('modal-bg').classList.add('open'); }
+function closeModal() {
+  document.getElementById('modal-bg').classList.remove('open');
+  ['m-title','m-prompt','m-tags'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('m-cat').value='research';
+}
+function bgClick(e) { if (e.target===e.currentTarget) closeModal(); }
+
+function savePrompt() {
+  const title = document.getElementById('m-title').value.trim();
+  const prompt = document.getElementById('m-prompt').value.trim();
+  const cat = document.getElementById('m-cat').value;
+  const tags = document.getElementById('m-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  if (!title || !prompt) { alert('Please fill in title and prompt.'); return; }
+  prompts.unshift({ id: nextId++, title, cat, prompt, tags });
+  save(); closeModal(); render();
+}
+</script>
+</body>
+</html>
